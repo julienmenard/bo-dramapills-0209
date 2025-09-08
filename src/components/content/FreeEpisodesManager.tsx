@@ -136,7 +136,7 @@ export function FreeEpisodesManager() {
                   </td>
                   <td className="p-4">
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                      {episode.campaign_countries_languages_id}
+                      {episode.campaign_countries_languages_id.substring(0, 8)}...
                     </code>
                   </td>
                   <td className="p-4 text-gray-600 text-sm">

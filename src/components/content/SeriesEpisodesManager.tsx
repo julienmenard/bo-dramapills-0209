@@ -151,6 +151,7 @@ export function SeriesEpisodesManager() {
                 <th className="text-left p-4 font-medium text-gray-900">Position</th>
                 <th className="text-left p-4 font-medium text-gray-900">Duration</th>
                 <th className="text-left p-4 font-medium text-gray-900">Year</th>
+                <th className="text-left p-4 font-medium text-gray-900">Campaign ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Streaming</th>
               </tr>
             </thead>
@@ -208,6 +209,11 @@ export function SeriesEpisodesManager() {
                     <span className="text-gray-600">
                       {episode.product_year || '-'}
                     </span>
+                  </td>
+                  <td className="p-4">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
+                      {episode.campaign_countries_languages_id.substring(0, 8)}...
+                    </code>
                   </td>
                   <td className="p-4">
                     {episode.url_streaming_no_drm ? (

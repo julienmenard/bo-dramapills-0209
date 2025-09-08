@@ -117,7 +117,7 @@ export function FreeEpisodesManager() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
-                <th className="text-left p-4 font-medium text-gray-900">Campaign ID</th>
+                <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">Campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Updated</th>
                 <th className="text-left p-4 font-medium text-gray-900">Status</th>
@@ -135,8 +135,8 @@ export function FreeEpisodesManager() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
-                      {episode.campaign_countries_languages_id.substring(0, 8)}...
+                    <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all max-w-[100px] block">
+                      {episode.campaign_countries_languages_id}
                     </code>
                   </td>
                   <td className="p-4 text-gray-600 text-sm">

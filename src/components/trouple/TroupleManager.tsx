@@ -369,12 +369,76 @@ export function TroupleManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this trouple?')) {
+    if (!confirm('Are you sure you want to delete this trouple? This will also delete ALL related content (series, episodes, rubrics, etc.) for this campaign. This action cannot be undone.')) {
       return;
     }
 
     console.log('🗑️ Deleting trouple:', id);
     try {
+      // First, delete all related content based on campaign_countries_languages_id
+      console.log('🗑️ Deleting related content for trouple:', id);
+      
+      // Delete from contents_series_rubrics
+      const { error: seriesRubricsError } = await supabase
+        .from('contents_series_rubrics')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (seriesRubricsError) {
+        console.error('Error deleting series rubrics:', seriesRubricsError);
+        throw seriesRubricsError;
+      }
+      console.log('✅ Deleted related series rubrics');
+
+      // Delete from contents_series_episodes_free
+      const { error: freeEpisodesError } = await supabase
+        .from('contents_series_episodes_free')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (freeEpisodesError) {
+        console.error('Error deleting free episodes:', freeEpisodesError);
+        throw freeEpisodesError;
+      }
+      console.log('✅ Deleted related free episodes');
+
+      // Delete from contents_series_episodes
+      const { error: episodesError } = await supabase
+        .from('contents_series_episodes')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (episodesError) {
+        console.error('Error deleting series episodes:', episodesError);
+        throw episodesError;
+      }
+      console.log('✅ Deleted related series episodes');
+
+      // Delete from contents_series
+      const { error: seriesError } = await supabase
+        .from('contents_series')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (seriesError) {
+        console.error('Error deleting series:', seriesError);
+        throw seriesError;
+      }
+      console.log('✅ Deleted related series');
+
+      // Delete from contents_rubrics
+      const { error: rubricsError } = await supabase
+        .from('contents_rubrics')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (rubricsError) {
+        console.error('Error deleting rubrics:', rubricsError);
+        throw rubricsError;
+      }
+      console.log('✅ Deleted related rubrics');
+
+      // Finally, delete the trouple itself
       const { error } = await supabase
         .from('campaign_countries_languages')
         .delete()
@@ -388,7 +452,7 @@ export function TroupleManager() {
       console.log('✅ Data reloaded successfully');
     } catch (error) {
       console.error('❌ Error deleting trouple:', error);
-      alert('Error deleting trouple. Please try again.');
+      alert('Error deleting trouple and related content. Please try again.');
     }
   };
 

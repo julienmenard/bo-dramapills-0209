@@ -375,6 +375,22 @@ export function TroupleManager() {
 
     console.log('🗑️ Deleting trouple:', id);
     try {
+      // First, get the campaign_id for this trouple
+      console.log('🔍 Fetching campaign_id for trouple:', id);
+      const { data: troupleData, error: troupleError } = await supabase
+        .from('campaign_countries_languages')
+        .select('campaign_id')
+        .eq('id', id)
+        .single();
+      
+      if (troupleError) {
+        console.error('Error fetching trouple data:', troupleError);
+        throw troupleError;
+      }
+      
+      const campaignId = troupleData.campaign_id;
+      console.log('📋 Found campaign_id:', campaignId);
+
       // First, delete all related content based on campaign_countries_languages_id
       console.log('🗑️ Deleting related content for trouple:', id);
       
@@ -390,7 +406,7 @@ export function TroupleManager() {
       }
       console.log('✅ Deleted related series rubrics');
 
-      // Delete from contents_rubrics
+      // Delete from contents_rubrics using campaign_id
       const { error: rubricsError } = await supabase
         .from('contents_rubrics')
         .delete()

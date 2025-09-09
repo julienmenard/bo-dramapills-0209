@@ -378,49 +378,29 @@ export function TroupleManager() {
       // First, delete all related content based on campaign_countries_languages_id
       console.log('🗑️ Deleting related content for trouple:', id);
       
-      // First, get all rubrics for this campaign to find their IDs
-      const { data: rubrics, error: rubricsQueryError } = await supabase
-        .from('contents_rubrics')
-        .select('id_rubric')
+      // Delete from contents_series_rubrics
+      const { error: seriesRubricsError } = await supabase
+        .from('contents_series_rubrics')
+        .delete()
         .eq('campaign_countries_languages_id', id);
       
-      if (rubricsQueryError) {
-        console.error('Error querying rubrics:', rubricsQueryError);
-        throw rubricsQueryError;
+      if (seriesRubricsError) {
+        console.error('Error deleting series rubrics:', seriesRubricsError);
+        throw seriesRubricsError;
       }
-      console.log('📋 Found rubrics to delete:', rubrics?.length || 0);
+      console.log('✅ Deleted related series rubrics');
 
-      // Delete from contents_series_rubrics for each rubric
-      if (rubrics && rubrics.length > 0) {
-        for (const rubric of rubrics) {
-          const { error: seriesRubricError } = await supabase
-            .from('contents_series_rubrics')
-            .delete()
-            .eq('id_rubric', rubric.id_rubric)
-            .eq('campaign_countries_languages_id', id);
-          
-          if (seriesRubricError) {
-            console.error('Error deleting series rubric associations:', seriesRubricError);
-            throw seriesRubricError;
-          }
-        }
-        console.log('✅ Deleted series rubric associations');
-
-        // Delete each rubric individually by its primary key
-        for (const rubric of rubrics) {
-          const { error: rubricDeleteError } = await supabase
-            .from('contents_rubrics')
-            .delete()
-            .eq('id_rubric', rubric.id_rubric)
-            .eq('campaign_countries_languages_id', id);
-          
-          if (rubricDeleteError) {
-            console.error('Error deleting individual rubric:', rubricDeleteError);
-            throw rubricDeleteError;
-          }
-        }
-        console.log('✅ Deleted individual rubrics by primary key');
+      // Delete from contents_rubrics
+      const { error: rubricsError } = await supabase
+        .from('contents_rubrics')
+        .delete()
+        .eq('campaign_countries_languages_id', id);
+      
+      if (rubricsError) {
+        console.error('Error deleting rubrics:', rubricsError);
+        throw rubricsError;
       }
+      console.log('✅ Deleted related rubrics');
 
       // Delete from contents_series_episodes_free
       const { error: freeEpisodesError } = await supabase

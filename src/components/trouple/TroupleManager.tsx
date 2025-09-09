@@ -378,17 +378,34 @@ export function TroupleManager() {
       // First, delete all related content based on campaign_countries_languages_id
       console.log('🗑️ Deleting related content for trouple:', id);
       
-      // Delete from contents_series_rubrics
-      const { error: seriesRubricsError } = await supabase
-        .from('contents_series_rubrics')
-        .delete()
+      // First, get all rubrics for this campaign to find their IDs
+      const { data: rubrics, error: rubricsQueryError } = await supabase
+        .from('contents_rubrics')
+        .select('id_rubric')
         .eq('campaign_countries_languages_id', id);
       
-      if (seriesRubricsError) {
-        console.error('Error deleting series rubrics:', seriesRubricsError);
-        throw seriesRubricsError;
+      if (rubricsQueryError) {
+        console.error('Error querying rubrics:', rubricsQueryError);
+        throw rubricsQueryError;
       }
-      console.log('✅ Deleted related series rubrics');
+      console.log('📋 Found rubrics to delete:', rubrics?.length || 0);
+
+      // Delete from contents_series_rubrics for each rubric
+      if (rubrics && rubrics.length > 0) {
+        for (const rubric of rubrics) {
+          const { error: seriesRubricError } = await supabase
+            .from('contents_series_rubrics')
+            .delete()
+            .eq('id_rubric', rubric.id_rubric)
+            .eq('campaign_countries_languages_id', id);
+          
+          if (seriesRubricError) {
+            console.error('Error deleting series rubric associations:', seriesRubricError);
+            throw seriesRubricError;
+          }
+        }
+        console.log('✅ Deleted series rubric associations');
+      }
 
       // Delete from contents_series_episodes_free
       const { error: freeEpisodesError } = await supabase

@@ -13,7 +13,7 @@ export function SyncGalaxy() {
     try {
       console.log('🔄 Starting Galaxy import...');
       
-      const { data, error } = await supabase.functions.invoke('galaxy-import-3', {
+      const { data, error } = await supabase.functions.invoke('galaxy-import', {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
@@ -21,21 +21,21 @@ export function SyncGalaxy() {
       });
 
       if (error) {
-        console.error('❌ Galaxy import-3 error:', error);
+        console.error('❌ Galaxy import error:', error);
         setResult({
           success: false,
-          message: error.message || 'Failed to execute Galaxy import-3'
+          message: error.message || 'Failed to execute Galaxy import'
         });
         return;
       }
 
-      console.log('✅ Galaxy import-3 completed:', data);
+      console.log('✅ Galaxy import completed:', data);
       setResult({
         success: true,
-        message: data?.message || 'Galaxy import-3 completed successfully'
+        message: data?.message || 'Galaxy import completed successfully'
       });
     } catch (error) {
-      console.error('❌ Unexpected error during Galaxy import-3:', error);
+      console.error('❌ Unexpected error during Galaxy import:', error);
       setResult({
         success: false,
         message: error instanceof Error ? error.message : 'An unexpected error occurred'
@@ -62,7 +62,7 @@ export function SyncGalaxy() {
             <div>
               <h3 className="font-medium text-blue-900 mb-1">Galaxy Data Import</h3>
               <p className="text-sm text-blue-800">
-                This will execute the galaxy-import-3 edge function to synchronize content data from the Galaxy API. 
+                This will execute the galaxy-import edge function to synchronize content data from the Galaxy API. 
                 This process may take several minutes to complete.
               </p>
             </div>

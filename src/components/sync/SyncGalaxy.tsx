@@ -16,6 +16,7 @@ export function SyncGalaxy() {
       const { data, error } = await supabase.functions.invoke('galaxy-import-3', {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
       });
 

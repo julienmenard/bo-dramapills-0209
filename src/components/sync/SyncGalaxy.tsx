@@ -13,7 +13,6 @@ export function SyncGalaxy() {
     try {
       console.log('🔄 Starting Galaxy import...');
       
-      const { data, error } = await supabase.functions.invoke('galaxy-import', {
       const { data, error } = await supabase.functions.invoke('galaxy-import-3', {
         headers: {
           'Content-Type': 'application/json',

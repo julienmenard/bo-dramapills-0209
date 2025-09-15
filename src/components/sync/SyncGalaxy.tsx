@@ -14,6 +14,7 @@ export function SyncGalaxy() {
       console.log('🔄 Starting Galaxy import...');
       
       const { data, error } = await supabase.functions.invoke('galaxy-import', {
+      const { data, error } = await supabase.functions.invoke('galaxy-import-3', {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
@@ -21,21 +22,21 @@ export function SyncGalaxy() {
       });
 
       if (error) {
-        console.error('❌ Galaxy import error:', error);
+        console.error('❌ Galaxy import-3 error:', error);
         setResult({
           success: false,
-          message: error.message || 'Failed to execute Galaxy import'
+          message: error.message || 'Failed to execute Galaxy import-3'
         });
         return;
       }
 
-      console.log('✅ Galaxy import completed:', data);
+      console.log('✅ Galaxy import-3 completed:', data);
       setResult({
         success: true,
-        message: data?.message || 'Galaxy import completed successfully'
+        message: data?.message || 'Galaxy import-3 completed successfully'
       });
     } catch (error) {
-      console.error('❌ Unexpected error during Galaxy import:', error);
+      console.error('❌ Unexpected error during Galaxy import-3:', error);
       setResult({
         success: false,
         message: error instanceof Error ? error.message : 'An unexpected error occurred'

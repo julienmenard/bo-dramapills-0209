@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './components/dashboard/Dashboard';
@@ -15,8 +15,72 @@ import { FreeEpisodesManager } from './components/content/FreeEpisodesManager';
 import { SeriesRubricsManager } from './components/content/SeriesRubricsManager';
 import { AdminUserManager } from './components/settings/AdminUserManager';
 import { SyncGalaxy } from './components/sync/SyncGalaxy';
+import { sesameAuth } from './lib/sesame';
 
 function AuthCallback() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { setUser, setLoading } = useAuth();
+  const [processing, setProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleCallback = async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+      
+      if (!code) {
+        setError('No authorization code received');
+        setTimeout(() => navigate('/'), 2000);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        await sesameAuth.handleCallback(code, state);
+        
+        const userInfo = await sesameAuth.getUserInfo();
+        const accessToken = await sesameAuth.getAccessToken();
+        
+        const sesameUser = {
+          id: userInfo.sub || userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name || userInfo.preferred_username || userInfo.email,
+          role: userInfo.role || 'admin',
+          accessToken: accessToken
+        };
+        
+        setUser(sesameUser);
+        
+        // Navigate to dashboard after successful authentication
+        navigate('/', { replace: true });
+      } catch (error) {
+        console.error('Error handling OAuth callback:', error);
+        setError('Authentication failed. Please try again.');
+        setTimeout(() => navigate('/'), 2000);
+      } finally {
+        setLoading(false);
+        setProcessing(false);
+      }
+    };
+
+    handleCallback();
+  }, [searchParams, navigate, setUser, setLoading]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-6 h-6 text-red-600" />
+          </div>
+          <p className="text-red-600 font-medium">{error}</p>
+          <p className="text-gray-500 text-sm mt-1">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="text-center">

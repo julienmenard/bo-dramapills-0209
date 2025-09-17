@@ -63,45 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
-  useEffect(() => {
-    // Handle OAuth callback
-    const handleCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      
-      if (code && window.location.pathname === '/auth/callback') {
-        try {
-          setLoading(true);
-          await sesameAuth.handleCallback(code, state);
-          
-          const userInfo = await sesameAuth.getUserInfo();
-          const accessToken = await sesameAuth.getAccessToken();
-          
-          const sesameUser: SesameUser = {
-            id: userInfo.sub || userInfo.id,
-            email: userInfo.email,
-            name: userInfo.name || userInfo.preferred_username || userInfo.email,
-            role: userInfo.role || 'admin',
-            accessToken: accessToken
-          };
-          
-          setUser(sesameUser);
-          
-          // Redirect to dashboard after successful authentication
-          window.history.replaceState({}, document.title, '/');
-        } catch (error) {
-          console.error('Error handling OAuth callback:', error);
-          window.history.replaceState({}, document.title, '/');
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    handleCallback();
-  }, []);
-
   const signIn = async () => {
     try {
       // Redirect to Sesame authentication

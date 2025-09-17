@@ -1,11 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { AdminLoginResponse } from '../types/database';
+import { sesameAuth } from '../lib/sesame';
+
+interface SesameUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  accessToken: string;
+}
 
 interface AuthContextType {
-  user: AdminLoginResponse | null;
+  user: SesameUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -20,38 +27,85 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AdminLoginResponse | null>(null);
+  const [user, setUser] = useState<SesameUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored admin session
-    const storedUser = localStorage.getItem('admin_user');
-    if (storedUser) {
+    // Initialize Sesame Auth and check for existing session
+    const initializeAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser));
+        // Check if user is already authenticated
+        const isAuthenticated = await sesameAuth.isAuthenticated();
+        
+        if (isAuthenticated) {
+          const userInfo = await sesameAuth.getUserInfo();
+          const accessToken = await sesameAuth.getAccessToken();
+          
+          const sesameUser: SesameUser = {
+            id: userInfo.sub || userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name || userInfo.preferred_username || userInfo.email,
+            role: userInfo.role || 'admin', // Default role or extract from token claims
+            accessToken: accessToken
+          };
+          
+          setUser(sesameUser);
+        }
       } catch (error) {
-        localStorage.removeItem('admin_user');
+        console.error('Error initializing Sesame Auth:', error);
+        // Clear any invalid session data
+        await sesameAuth.signOut();
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.rpc('verify_admin_password', {
-        email_input: email,
-        password_input: password
-      });
-
-      if (error) throw error;
+  useEffect(() => {
+    // Handle OAuth callback
+    const handleCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
       
-      if (!data || data.length === 0) {
-        throw new Error('Invalid email or password');
+      if (code && window.location.pathname === '/auth/callback') {
+        try {
+          setLoading(true);
+          await sesameAuth.handleCallback(code, state);
+          
+          const userInfo = await sesameAuth.getUserInfo();
+          const accessToken = await sesameAuth.getAccessToken();
+          
+          const sesameUser: SesameUser = {
+            id: userInfo.sub || userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name || userInfo.preferred_username || userInfo.email,
+            role: userInfo.role || 'admin',
+            accessToken: accessToken
+          };
+          
+          setUser(sesameUser);
+          
+          // Redirect to dashboard after successful authentication
+          window.history.replaceState({}, document.title, '/');
+        } catch (error) {
+          console.error('Error handling OAuth callback:', error);
+          window.history.replaceState({}, document.title, '/');
+        } finally {
+          setLoading(false);
+        }
       }
+    };
 
-      const adminUser = data[0] as AdminLoginResponse;
-      setUser(adminUser);
-      localStorage.setItem('admin_user', JSON.stringify(adminUser));
+    handleCallback();
+  }, []);
+
+  const signIn = async () => {
+    try {
+      // Redirect to Sesame authentication
+      await sesameAuth.signIn();
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -59,8 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    setUser(null);
-    localStorage.removeItem('admin_user');
+    try {
+      await sesameAuth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
   };
 
   const value = {

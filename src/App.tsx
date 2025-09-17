@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './components/dashboard/Dashboard';
@@ -15,9 +16,25 @@ import { SeriesRubricsManager } from './components/content/SeriesRubricsManager'
 import { AdminUserManager } from './components/settings/AdminUserManager';
 import { SyncGalaxy } from './components/sync/SyncGalaxy';
 
+function AuthCallback() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-gray-600">Processing authentication...</p>
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
+
+  // Handle OAuth callback route
+  if (window.location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
 
   if (loading) {
     return (

@@ -84,11 +84,11 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
         {user && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-gray-900">
-              {user.user_name || 'Admin User'}
+              {user.name || 'Admin User'}
             </p>
-            <p className="text-xs text-gray-600">{user.user_email}</p>
+            <p className="text-xs text-gray-600">{user.email}</p>
             <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-              {user.user_role}
+              {user.role}
             </span>
           </div>
         )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Trophy, 
@@ -17,28 +18,24 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface SidebarProps {
-  currentView: string;
-  onViewChange: (view: string) => void;
-}
-
-export function Sidebar({ currentView, onViewChange }: SidebarProps) {
+export function Sidebar() {
   const { signOut, user } = useAuth();
+  const location = useLocation();
 
   const navigation = [
-    { id: 'dashboard', name: 'Dashboard', icon: Home },
-    { id: 'gamification', name: 'Gamification Events', icon: Trophy },
-    { id: 'translations', name: 'Event Translations', icon: Languages },
-    { id: 'event-categories', name: 'Event Categories', icon: Tags },
-    { id: 'trouple', name: 'Trouple Management', icon: Globe },
-    { id: 'rubrics', name: 'Content Rubrics', icon: Tags },
-    { id: 'series', name: 'Content Series', icon: Video },
-    { id: 'episodes', name: 'Series Episodes', icon: Play },
-    { id: 'free-episodes', name: 'Free Episodes', icon: Gift },
-    { id: 'series-rubrics', name: 'Series Rubrics', icon: BookOpen },
-    { id: 'sync-galaxy', name: 'Sync Galaxy', icon: RefreshCw },
-    { id: 'analytics', name: 'Analytics', icon: BarChart3 },
-    { id: 'settings', name: 'Settings', icon: Settings },
+    { path: '/dashboard', name: 'Dashboard', icon: Home },
+    { path: '/gamification', name: 'Gamification Events', icon: Trophy },
+    { path: '/translations', name: 'Event Translations', icon: Languages },
+    { path: '/event-categories', name: 'Event Categories', icon: Tags },
+    { path: '/trouple', name: 'Trouple Management', icon: Globe },
+    { path: '/rubrics', name: 'Content Rubrics', icon: Tags },
+    { path: '/series', name: 'Content Series', icon: Video },
+    { path: '/episodes', name: 'Series Episodes', icon: Play },
+    { path: '/free-episodes', name: 'Free Episodes', icon: Gift },
+    { path: '/series-rubrics', name: 'Series Rubrics', icon: BookOpen },
+    { path: '/sync-galaxy', name: 'Sync Galaxy', icon: RefreshCw },
+    { path: '/analytics', name: 'Analytics', icon: BarChart3 },
+    { path: '/settings', name: 'Settings', icon: Settings },
   ];
 
   return (
@@ -59,12 +56,12 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
         <ul className="space-y-2">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = currentView === item.id;
+            const isActive = location.pathname === item.path;
             
             return (
-              <li key={item.id}>
-                <button
-                  onClick={() => onViewChange(item.id)}
+              <li key={item.path}>
+                <Link
+                  to={item.path}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                     isActive
                       ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
@@ -73,7 +70,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
                 >
                   <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                   <span className="font-medium">{item.name}</span>
-                </button>
+                </Link>
               </li>
             );
           })}

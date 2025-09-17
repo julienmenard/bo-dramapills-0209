@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/layout/Sidebar';
 import { Dashboard } from './components/dashboard/Dashboard';
@@ -27,14 +27,30 @@ function AuthCallback() {
   );
 }
 
+function AnalyticsPage() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">Analytics</h2>
+      <p className="text-gray-600">Advanced analytics features coming soon...</p>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600">Manage application settings and user accounts</p>
+      </div>
+      <AdminUserManager />
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
-  const [currentView, setCurrentView] = useState('dashboard');
 
-  // Handle OAuth callback route
-  if (window.location.pathname === '/auth/callback') {
-    return <AuthCallback />;
-  }
 
   if (loading) {
     return (
@@ -51,59 +67,29 @@ function AppContent() {
     return <LoginForm />;
   }
 
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'gamification':
-        return <GamificationEventsManager />;
-      case 'translations':
-        return <EventTranslationsManager />;
-      case 'event-categories':
-        return <EventCategoriesManager />;
-      case 'trouple':
-        return <TroupleManager />;
-      case 'rubrics':
-        return <ContentRubricsManager />;
-      case 'series':
-        return <ContentSeriesManager />;
-      case 'episodes':
-        return <SeriesEpisodesManager />;
-      case 'free-episodes':
-        return <FreeEpisodesManager />;
-      case 'series-rubrics':
-        return <SeriesRubricsManager />;
-      case 'sync-galaxy':
-        return <SyncGalaxy />;
-      case 'analytics':
-        return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Analytics</h2>
-            <p className="text-gray-600">Advanced analytics features coming soon...</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-              <p className="text-gray-600">Manage application settings and user accounts</p>
-            </div>
-            <AdminUserManager />
-          </div>
-        );
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+      <Sidebar />
       
       <main className="flex-1 overflow-x-hidden">
         <div className="p-6">
-          {renderCurrentView()}
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/gamification" element={<GamificationEventsManager />} />
+            <Route path="/translations" element={<EventTranslationsManager />} />
+            <Route path="/event-categories" element={<EventCategoriesManager />} />
+            <Route path="/trouple" element={<TroupleManager />} />
+            <Route path="/rubrics" element={<ContentRubricsManager />} />
+            <Route path="/series" element={<ContentSeriesManager />} />
+            <Route path="/episodes" element={<SeriesEpisodesManager />} />
+            <Route path="/free-episodes" element={<FreeEpisodesManager />} />
+            <Route path="/series-rubrics" element={<SeriesRubricsManager />} />
+            <Route path="/sync-galaxy" element={<SyncGalaxy />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
         </div>
       </main>
     </div>
@@ -113,7 +99,10 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
     </AuthProvider>
   );
 }

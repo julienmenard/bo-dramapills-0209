@@ -21,21 +21,21 @@ export function SyncGalaxy() {
       });
 
       if (error) {
-        console.error('❌ Galaxy import-3 error:', error);
+        console.error('❌ Galaxy import error:', error);
         setResult({
           success: false,
-          message: error.message || 'Failed to execute Galaxy import-3'
+          message: error.message || 'Failed to execute Galaxy import'
         });
         return;
       }
 
-      console.log('✅ Galaxy import-3 completed:', data);
+      console.log('✅ Galaxy import completed:', data);
       setResult({
         success: true,
-        message: data?.message || 'Galaxy import-3 completed successfully'
+        message: data?.message || 'Galaxy import completed successfully'
       });
     } catch (error) {
-      console.error('❌ Unexpected error during Galaxy import-3:', error);
+      console.error('❌ Unexpected error during Galaxy import:', error);
       setResult({
         success: false,
         message: error instanceof Error ? error.message : 'An unexpected error occurred'

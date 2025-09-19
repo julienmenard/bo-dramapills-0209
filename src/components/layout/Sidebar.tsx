@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Trophy, 
@@ -18,24 +17,28 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-export function Sidebar() {
+interface SidebarProps {
+  currentView: string;
+  onViewChange: (view: string) => void;
+}
+
+export function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const { signOut, user } = useAuth();
-  const location = useLocation();
 
   const navigation = [
-    { path: '/dashboard', name: 'Dashboard', icon: Home },
-    { path: '/gamification', name: 'Gamification Events', icon: Trophy },
-    { path: '/translations', name: 'Event Translations', icon: Languages },
-    { path: '/event-categories', name: 'Event Categories', icon: Tags },
-    { path: '/trouple', name: 'Trouple Management', icon: Globe },
-    { path: '/rubrics', name: 'Content Rubrics', icon: Tags },
-    { path: '/series', name: 'Content Series', icon: Video },
-    { path: '/episodes', name: 'Series Episodes', icon: Play },
-    { path: '/free-episodes', name: 'Free Episodes', icon: Gift },
-    { path: '/series-rubrics', name: 'Series Rubrics', icon: BookOpen },
-    { path: '/sync-galaxy', name: 'Sync Galaxy', icon: RefreshCw },
-    { path: '/analytics', name: 'Analytics', icon: BarChart3 },
-    { path: '/settings', name: 'Settings', icon: Settings },
+    { id: 'dashboard', name: 'Dashboard', icon: Home },
+    { id: 'gamification', name: 'Gamification Events', icon: Trophy },
+    { id: 'translations', name: 'Event Translations', icon: Languages },
+    { id: 'event-categories', name: 'Event Categories', icon: Tags },
+    { id: 'trouple', name: 'Trouple Management', icon: Globe },
+    { id: 'rubrics', name: 'Content Rubrics', icon: Tags },
+    { id: 'series', name: 'Content Series', icon: Video },
+    { id: 'episodes', name: 'Series Episodes', icon: Play },
+    { id: 'free-episodes', name: 'Free Episodes', icon: Gift },
+    { id: 'series-rubrics', name: 'Series Rubrics', icon: BookOpen },
+    { id: 'sync-galaxy', name: 'Sync Galaxy', icon: RefreshCw },
+    { id: 'analytics', name: 'Analytics', icon: BarChart3 },
+    { id: 'settings', name: 'Settings', icon: Settings },
   ];
 
   return (
@@ -56,12 +59,12 @@ export function Sidebar() {
         <ul className="space-y-2">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = currentView === item.id;
             
             return (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
+              <li key={item.id}>
+                <button
+                  onClick={() => onViewChange(item.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                     isActive
                       ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
@@ -70,7 +73,7 @@ export function Sidebar() {
                 >
                   <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                   <span className="font-medium">{item.name}</span>
-                </Link>
+                </button>
               </li>
             );
           })}
@@ -81,11 +84,11 @@ export function Sidebar() {
         {user && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-gray-900">
-              {user.name || 'Admin User'}
+              {user.user_name || 'Admin User'}
             </p>
-            <p className="text-xs text-gray-600">{user.email}</p>
+            <p className="text-xs text-gray-600">{user.user_email}</p>
             <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-              {user.role}
+              {user.user_role}
             </span>
           </div>
         )}

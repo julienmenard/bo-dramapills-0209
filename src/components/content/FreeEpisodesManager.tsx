@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gift, Search, Play } from 'lucide-react';
+import { Gift, Search, Play, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface FreeEpisode {
@@ -19,6 +19,8 @@ export function FreeEpisodesManager() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [campaignFilter, setCampaignFilter] = useState('all');
+  const [sortColumn, setSortColumn] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     loadFreeEpisodes();
@@ -57,6 +59,66 @@ export function FreeEpisodesManager() {
     }
   };
 
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortData = (data: FreeEpisode[]) => {
+    return [...data].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'episode_id':
+          aValue = a.episode_id;
+          bValue = b.episode_id;
+          break;
+        case 'series_id':
+          aValue = a.series_id || 0;
+          bValue = b.series_id || 0;
+          break;
+        case 'episode_position':
+          aValue = a.episode_position || 0;
+          bValue = b.episode_position || 0;
+          break;
+        case 'title':
+          aValue = (a.title || `Episode ${a.episode_position || a.episode_id}`).toLowerCase();
+          bValue = (b.title || `Episode ${b.episode_position || b.episode_id}`).toLowerCase();
+          break;
+        case 'country_language':
+          aValue = `${a.country_code || ''} ${a.language_code || ''}`.toLowerCase();
+          bValue = `${b.country_code || ''} ${b.language_code || ''}`.toLowerCase();
+          break;
+        case 'campaign_id':
+          aValue = a.campaign_countries_languages_id.toLowerCase();
+          bValue = b.campaign_countries_languages_id.toLowerCase();
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+  };
   const filteredFreeEpisodes = freeEpisodes.filter((episode) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
@@ -74,7 +136,36 @@ export function FreeEpisodesManager() {
     return matchesSearch && matchesCampaign;
   });
 
+  const sortedAndFilteredFreeEpisodes = sortData(filteredFreeEpisodes);
+
   const uniqueCampaigns = [...new Set(freeEpisodes.map(e => e.campaign_countries_languages_id))];
+
+  const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
+    <th 
+      className="text-left p-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+      onClick={() => handleSort(column)}
+    >
+      <div className="flex items-center gap-2">
+        {children}
+        <div className="flex flex-col">
+          <ChevronUp 
+            className={`w-3 h-3 ${
+              sortColumn === column && sortDirection === 'asc' 
+                ? 'text-blue-600' 
+                : 'text-gray-300'
+            }`} 
+          />
+          <ChevronDown 
+            className={`w-3 h-3 -mt-1 ${
+              sortColumn === column && sortDirection === 'desc' 
+                ? 'text-blue-600' 
+                : 'text-gray-300'
+            }`} 
+          />
+        </div>
+      </div>
+    </th>
+  );
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -141,17 +232,38 @@ export function FreeEpisodesManager() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
-                <th className="text-left p-4 font-medium text-gray-900">Serie ID</th>
-                <th className="text-left p-4 font-medium text-gray-900">Episode Position</th>
-                <th className="text-left p-4 font-medium text-gray-900">Title</th>
-                <th className="text-left p-4 font-medium text-gray-900">Country Language</th>
-                <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">ID trouple campaign</th>
-                <th className="text-left p-4 font-medium text-gray-900">Created</th>
+                <SortableHeader column="episode_id">Episode ID</SortableHeader>
+                <SortableHeader column="series_id">Serie ID</SortableHeader>
+                <SortableHeader column="episode_position">Episode Position</SortableHeader>
+                <SortableHeader column="title">Title</SortableHeader>
+                <SortableHeader column="country_language">Country Language</SortableHeader>
+                <th className="text-left p-4 font-medium text-gray-900 min-w-[120px] cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={() => handleSort('campaign_id')}>
+                  <div className="flex items-center gap-2">
+                    ID trouple campaign
+                    <div className="flex flex-col">
+                      <ChevronUp 
+                        className={`w-3 h-3 ${
+                          sortColumn === 'campaign_id' && sortDirection === 'asc' 
+                            ? 'text-blue-600' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                      <ChevronDown 
+                        className={`w-3 h-3 -mt-1 ${
+                          sortColumn === 'campaign_id' && sortDirection === 'desc' 
+                            ? 'text-blue-600' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    </div>
+                  </div>
+                </th>
+                <SortableHeader column="created_at">Created</SortableHeader>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredFreeEpisodes.map((episode) => (
+              {sortedAndFilteredFreeEpisodes.map((episode) => (
                 <tr key={`${episode.episode_id}-${episode.campaign_countries_languages_id}`} className="hover:bg-gray-50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-2">
@@ -213,7 +325,7 @@ export function FreeEpisodesManager() {
             </tbody>
           </table>
           
-          {filteredFreeEpisodes.length === 0 && (
+          {sortedAndFilteredFreeEpisodes.length === 0 && (
             <div className="text-center py-12">
               <Gift className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">No free episodes found</p>

@@ -117,7 +117,7 @@ export function FreeEpisodesManager() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
-                <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">Campaign</th>
+                <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">ID trouple campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Updated</th>
               </tr>

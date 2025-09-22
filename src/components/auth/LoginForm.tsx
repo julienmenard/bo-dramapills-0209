@@ -33,7 +33,6 @@ export function LoginForm() {
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Admin Backoffice</h1>
-          <h1 className="text-2xl font-bold text-gray-900">Backoffice Dramapills</h1>
           <p className="text-gray-600 mt-2">
             Sign in to manage products and features
           </p>

@@ -140,7 +140,6 @@ export function FreeEpisodesManager() {
                 <th className="text-left p-4 font-medium text-gray-900">Title</th>
                 <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">ID trouple campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
-                <th className="text-left p-4 font-medium text-gray-900">Updated</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -184,9 +183,6 @@ export function FreeEpisodesManager() {
                   </td>
                   <td className="p-4 text-gray-600 text-sm">
                     {formatDate(episode.created_at)}
-                  </td>
-                  <td className="p-4 text-gray-600 text-sm">
-                    {formatDate(episode.updated_at)}
                   </td>
                 </tr>
               ))}

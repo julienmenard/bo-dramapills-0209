@@ -7,6 +7,7 @@ interface FreeEpisode {
   campaign_countries_languages_id: string;
   created_at: string;
   updated_at: string;
+  series_id?: number;
 }
 
 export function FreeEpisodesManager() {
@@ -24,12 +25,22 @@ export function FreeEpisodesManager() {
     try {
       const { data, error } = await supabase
         .from('contents_series_episodes_free')
-        .select('*')
+        .select(`
+          *,
+          contents_series_episodes!inner(series_id)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('📊 Free episodes loaded:', data?.length || 0);
-      setFreeEpisodes(data || []);
+      
+      // Flatten the joined data
+      const flattenedData = data?.map(item => ({
+        ...item,
+        series_id: item.contents_series_episodes?.series_id
+      })) || [];
+      
+      console.log('📊 Free episodes loaded:', flattenedData.length);
+      setFreeEpisodes(flattenedData);
     } catch (error) {
       console.error('❌ Error loading free episodes:', error);
     } finally {
@@ -41,7 +52,8 @@ export function FreeEpisodesManager() {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
       episode.episode_id.toString().includes(searchLower) ||
-      episode.campaign_countries_languages_id.toLowerCase().includes(searchLower)
+      episode.campaign_countries_languages_id.toLowerCase().includes(searchLower) ||
+      (episode.series_id && episode.series_id.toString().includes(searchLower))
     );
     const matchesCampaign = campaignFilter === 'all' || 
       episode.campaign_countries_languages_id === campaignFilter;
@@ -117,6 +129,7 @@ export function FreeEpisodesManager() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
+                <th className="text-left p-4 font-medium text-gray-900">Serie ID</th>
                 <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">ID trouple campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Updated</th>
@@ -132,6 +145,15 @@ export function FreeEpisodesManager() {
                         {episode.episode_id}
                       </span>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    {episode.series_id ? (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                        {episode.series_id}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
                   </td>
                   <td className="p-4">
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all max-w-[100px] block">

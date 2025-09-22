@@ -8,12 +8,16 @@ interface CampaignCountryLanguage {
   country_code: string | null;
   language_code: string | null;
   created_at: string;
+  free_episodes_count: number;
+  free_episode_price_coins: number;
 }
 
 interface TroupleFormData {
   campaign_id: number;
   country_code: string;
   language_code: string;
+  free_episodes_count: number;
+  free_episode_price_coins: number;
 }
 
 export function TroupleManager() {
@@ -28,6 +32,8 @@ export function TroupleManager() {
     campaign_id: 0,
     country_code: '',
     language_code: '',
+    free_episodes_count: 3,
+    free_episode_price_coins: 0,
   });
 
   const allCountries = [
@@ -477,6 +483,8 @@ export function TroupleManager() {
       campaign_id: trouple.campaign_id,
       country_code: trouple.country_code || '',
       language_code: trouple.language_code || '',
+      free_episodes_count: trouple.free_episodes_count || 3,
+      free_episode_price_coins: trouple.free_episode_price_coins || 0,
     });
     setEditingTrouple(trouple);
     setShowForm(true);
@@ -487,6 +495,8 @@ export function TroupleManager() {
       campaign_id: 0,
       country_code: '',
       language_code: '',
+      free_episodes_count: 3,
+      free_episode_price_coins: 0,
     });
     setEditingTrouple(null);
     setShowForm(false);
@@ -575,6 +585,8 @@ export function TroupleManager() {
                 <th className="text-left p-4 font-medium text-gray-900">Campaign ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Country</th>
                 <th className="text-left p-4 font-medium text-gray-900">Language</th>
+                <th className="text-left p-4 font-medium text-gray-900">Free Episodes</th>
+                <th className="text-left p-4 font-medium text-gray-900">Episode Price</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Actions</th>
               </tr>
@@ -609,6 +621,17 @@ export function TroupleManager() {
                           {trouple.language_code}
                         </code>
                       )}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
+                      {trouple.free_episodes_count}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-900">{trouple.free_episode_price_coins}</span>
+                      <span className="text-xs text-gray-500">coins</span>
                     </div>
                   </td>
                   <td className="p-4 text-gray-600 text-sm">
@@ -719,6 +742,47 @@ export function TroupleManager() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="free_episodes_count" className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Free Episodes
+                    </label>
+                    <select
+                      id="free_episodes_count"
+                      value={formData.free_episodes_count}
+                      onChange={(e) => setFormData({ ...formData, free_episodes_count: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {Array.from({ length: 101 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {i} episode{i !== 1 ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Episodes 1-{formData.free_episodes_count} will be free
+                    </p>
+                  </div>
+
+                  <div>
+                    <label htmlFor="free_episode_price_coins" className="block text-sm font-medium text-gray-700 mb-2">
+                      Free Episode Price (Coins)
+                    </label>
+                    <input
+                      type="number"
+                      id="free_episode_price_coins"
+                      value={formData.free_episode_price_coins}
+                      onChange={(e) => setFormData({ ...formData, free_episode_price_coins: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Cost in coins to unlock free episodes
+                    </p>
                   </div>
                 </div>
               </div>

@@ -32,6 +32,7 @@ export function LoginForm() {
           <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
+          <h1 className="text-2xl font-bold text-gray-900">Back office drama pills</h1>
           <h1 className="text-2xl font-bold text-gray-900">Admin Backoffice</h1>
           <p className="text-gray-600 mt-2">
             Sign in to manage products and features

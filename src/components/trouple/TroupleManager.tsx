@@ -582,7 +582,6 @@ export function TroupleManager() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-4 font-medium text-gray-900">ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Campaign ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Country</th>
                 <th className="text-left p-4 font-medium text-gray-900">Language</th>
@@ -595,11 +594,6 @@ export function TroupleManager() {
             <tbody className="divide-y divide-gray-200">
               {filteredTrouples.map((trouple) => (
                 <tr key={trouple.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="p-4">
-                    <code className="bg-indigo-50 text-indigo-800 px-2 py-1 rounded text-xs font-mono break-all max-w-[120px] block">
-                      {trouple.id}
-                    </code>
-                  </td>
                   <td className="p-4">
                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
                       {trouple.campaign_id}

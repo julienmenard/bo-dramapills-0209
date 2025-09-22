@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, Users, Search, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { FreeEpisodesSettings } from './FreeEpisodesSettings';
 
 interface AdminUser {
   id: string;
@@ -241,8 +240,6 @@ export function AdminUserManager() {
 
   return (
     <div className="space-y-6">
-      <FreeEpisodesSettings />
-      
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

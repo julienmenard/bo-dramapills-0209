@@ -7,6 +7,9 @@ interface FreeEpisode {
   campaign_countries_languages_id: string;
   created_at: string;
   updated_at: string;
+  series_id?: number;
+  episode_title?: string;
+  episode_position?: number;
 }
 
 export function FreeEpisodesManager() {
@@ -24,12 +27,34 @@ export function FreeEpisodesManager() {
     try {
       const { data, error } = await supabase
         .from('contents_series_episodes_free')
-        .select('*')
+        .select(`
+          episode_id,
+          campaign_countries_languages_id,
+          created_at,
+          updated_at,
+          contents_series_episodes!inner(
+            series_id,
+            title,
+            episode_position
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       console.log('📊 Free episodes loaded:', data?.length || 0);
-      setFreeEpisodes(data || []);
+      
+      // Transform the data to flatten the joined fields
+      const transformedData = (data || []).map(item => ({
+        episode_id: item.episode_id,
+        campaign_countries_languages_id: item.campaign_countries_languages_id,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        series_id: item.contents_series_episodes?.series_id,
+        episode_title: item.contents_series_episodes?.title,
+        episode_position: item.contents_series_episodes?.episode_position,
+      }));
+      
+      setFreeEpisodes(transformedData);
     } catch (error) {
       console.error('❌ Error loading free episodes:', error);
     } finally {
@@ -41,6 +66,9 @@ export function FreeEpisodesManager() {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
       episode.episode_id.toString().includes(searchLower) ||
+      (episode.series_id?.toString() || '').includes(searchLower) ||
+      (episode.episode_title || '').toLowerCase().includes(searchLower) ||
+      (episode.episode_position?.toString() || '').includes(searchLower) ||
       episode.campaign_countries_languages_id.toLowerCase().includes(searchLower)
     );
     const matchesCampaign = campaignFilter === 'all' || 
@@ -117,6 +145,9 @@ export function FreeEpisodesManager() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
+                <th className="text-left p-4 font-medium text-gray-900">Serie ID</th>
+                <th className="text-left p-4 font-medium text-gray-900">Title</th>
+                <th className="text-left p-4 font-medium text-gray-900">Position</th>
                 <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">Campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Updated</th>
@@ -150,6 +181,35 @@ export function FreeEpisodesManager() {
                       <Gift className="w-3 h-3" />
                       Free
                     </span>
+                  </td>
+                  <td className="p-4">
+                    {episode.series_id ? (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                        {episode.series_id}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="max-w-xs">
+                      {episode.episode_title ? (
+                        <span className="font-medium text-gray-900 truncate block">
+                          {episode.episode_title}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">No title</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    {episode.episode_position ? (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
+                        #{episode.episode_position}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -9,6 +9,7 @@ interface FreeEpisode {
   updated_at: string;
   series_id?: number;
   episode_position?: number;
+  title?: string;
 }
 
 export function FreeEpisodesManager() {
@@ -28,7 +29,7 @@ export function FreeEpisodesManager() {
         .from('contents_series_episodes_free')
         .select(`
           *,
-          contents_series_episodes!inner(series_id, episode_position)
+          contents_series_episodes!inner(series_id, episode_position, title)
         `)
         .order('created_at', { ascending: false });
 
@@ -38,7 +39,8 @@ export function FreeEpisodesManager() {
       const flattenedData = data?.map(item => ({
         ...item,
         series_id: item.contents_series_episodes?.series_id,
-        episode_position: item.contents_series_episodes?.episode_position
+        episode_position: item.contents_series_episodes?.episode_position,
+        title: item.contents_series_episodes?.title
       })) || [];
       
       console.log('📊 Free episodes loaded:', flattenedData.length);
@@ -56,7 +58,8 @@ export function FreeEpisodesManager() {
       episode.episode_id.toString().includes(searchLower) ||
       episode.campaign_countries_languages_id.toLowerCase().includes(searchLower) ||
       (episode.series_id && episode.series_id.toString().includes(searchLower)) ||
-      (episode.episode_position && episode.episode_position.toString().includes(searchLower))
+      (episode.episode_position && episode.episode_position.toString().includes(searchLower)) ||
+      (episode.title && episode.title.toLowerCase().includes(searchLower))
     );
     const matchesCampaign = campaignFilter === 'all' || 
       episode.campaign_countries_languages_id === campaignFilter;
@@ -134,6 +137,7 @@ export function FreeEpisodesManager() {
                 <th className="text-left p-4 font-medium text-gray-900">Episode ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Serie ID</th>
                 <th className="text-left p-4 font-medium text-gray-900">Episode Position</th>
+                <th className="text-left p-4 font-medium text-gray-900">Title</th>
                 <th className="text-left p-4 font-medium text-gray-900 min-w-[120px]">ID trouple campaign</th>
                 <th className="text-left p-4 font-medium text-gray-900">Created</th>
                 <th className="text-left p-4 font-medium text-gray-900">Updated</th>
@@ -167,6 +171,11 @@ export function FreeEpisodesManager() {
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
+                  </td>
+                  <td className="p-4">
+                    <span className="font-medium text-gray-900">
+                      {episode.title || `Episode ${episode.episode_position || episode.episode_id}`}
+                    </span>
                   </td>
                   <td className="p-4">
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono break-all max-w-[100px] block">

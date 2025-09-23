@@ -62,6 +62,7 @@ export function EventTranslationsManager() {
     { code: 'de', name: 'German' },
     { code: 'it', name: 'Italian' },
     { code: 'pt', name: 'Portuguese' },
+    { code: 'pt-BR', name: 'Brazilian Portuguese' },
     { code: 'ru', name: 'Russian' },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },

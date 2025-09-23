@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface GamificationEvent {
@@ -29,6 +29,14 @@ interface TranslationFormData {
   message: string;
 }
 
+interface BulkTranslationData {
+  [eventId: string]: {
+    es?: { title: string; description: string; message: string };
+    'pt-BR'?: { title: string; description: string; message: string };
+    de?: { title: string; description: string; message: string };
+  };
+}
+
 interface Notification {
   id: string;
   type: 'success' | 'error';
@@ -42,10 +50,14 @@ export function EventTranslationsManager() {
   const [showForm, setShowForm] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState<EventTranslation | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const [bulkTranslations, setBulkTranslations] = useState<BulkTranslationData>({});
 
   const [formData, setFormData] = useState<TranslationFormData>({
     event_id: '',
@@ -67,6 +79,12 @@ export function EventTranslationsManager() {
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'zh', name: 'Chinese' },
+  ];
+
+  const bulkLanguages = [
+    { code: 'es', name: 'Spanish' },
+    { code: 'pt-BR', name: 'Brazilian Portuguese' },
+    { code: 'de', name: 'German' },
   ];
 
   useEffect(() => {
@@ -187,6 +205,88 @@ export function EventTranslationsManager() {
     }
   };
 
+  const handleBulkSave = async () => {
+    console.log('💾 Bulk saving translations...');
+    setBulkSaving(true);
+
+    try {
+      const translationsToInsert = [];
+
+      // Prepare all translations for bulk insert
+      for (const [eventId, eventTranslations] of Object.entries(bulkTranslations)) {
+        for (const [languageCode, translation] of Object.entries(eventTranslations)) {
+          if (translation && translation.title && translation.description && translation.message) {
+            // Check if translation already exists
+            const existingTranslation = translations.find(
+              t => t.event_id === eventId && t.language_code === languageCode
+            );
+
+            if (!existingTranslation) {
+              translationsToInsert.push({
+                event_id: eventId,
+                language_code: languageCode,
+                title: translation.title,
+                description: translation.description,
+                message: translation.message,
+              });
+            }
+          }
+        }
+      }
+
+      if (translationsToInsert.length === 0) {
+        addNotification('error', 'No new translations to save. Please fill in at least one complete translation.');
+        setBulkSaving(false);
+        return;
+      }
+
+      console.log(`➕ Inserting ${translationsToInsert.length} translations...`);
+      const { error } = await supabase
+        .from('gamification_event_translations')
+        .insert(translationsToInsert);
+
+      if (error) throw error;
+
+      console.log('✅ Bulk translations saved successfully');
+      addNotification('success', `Successfully added ${translationsToInsert.length} translations`);
+      
+      // Reload data and reset form
+      await loadData();
+      setBulkTranslations({});
+      setShowBulkForm(false);
+    } catch (error) {
+      console.error('❌ Error bulk saving translations:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      addNotification('error', `Failed to save translations: ${errorMessage}`);
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const updateBulkTranslation = (eventId: string, languageCode: string, field: string, value: string) => {
+    setBulkTranslations(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        [languageCode]: {
+          ...prev[eventId]?.[languageCode],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const getEventsWithoutTranslations = () => {
+    return events.filter(event => {
+      const existingLanguages = translations
+        .filter(t => t.event_id === event.id)
+        .map(t => t.language_code);
+      
+      // Return events that don't have all 3 target languages
+      return bulkLanguages.some(lang => !existingLanguages.includes(lang.code));
+    });
+  };
+
   const handleEdit = (translation: EventTranslation) => {
     setFormData({
       event_id: translation.event_id,
@@ -298,13 +398,22 @@ export function EventTranslationsManager() {
               <p className="text-gray-600">Manage multilingual content for gamification events</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Translation
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Translation
+            </button>
+            <button
+              onClick={() => setShowBulkForm(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Bulk Add Translations
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4">
@@ -564,6 +673,149 @@ export function EventTranslationsManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showBulkForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Bulk Add Translations</h2>
+                <p className="text-sm text-gray-600 mt-1">Add Spanish, Brazilian Portuguese, and German translations for existing events</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowBulkForm(false);
+                  setBulkTranslations({});
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className="space-y-8">
+                {getEventsWithoutTranslations().length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-gray-600">All events already have translations for the target languages</p>
+                    <p className="text-sm text-gray-500 mt-1">Spanish, Brazilian Portuguese, and German translations are complete</p>
+                  </div>
+                ) : (
+                  getEventsWithoutTranslations().map((event) => {
+                    const existingLanguages = translations
+                      .filter(t => t.event_id === event.id)
+                      .map(t => t.language_code);
+                    
+                    const missingLanguages = bulkLanguages.filter(lang => !existingLanguages.includes(lang.code));
+
+                    return (
+                      <div key={event.id} className="border border-gray-200 rounded-lg p-6">
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">{event.event_type}</h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {existingLanguages.map(lang => (
+                              <span key={lang} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                {getLanguageName(lang)} ✓
+                              </span>
+                            ))}
+                            {missingLanguages.map(lang => (
+                              <span key={lang.code} className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                                {lang.name} (missing)
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          {missingLanguages.map((language) => (
+                            <div key={language.code} className="border border-gray-100 rounded-lg p-4 bg-gray-50">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Globe className="w-4 h-4 text-blue-600" />
+                                <h4 className="font-medium text-gray-900">{language.name}</h4>
+                                <code className="bg-gray-200 px-2 py-1 rounded text-xs">{language.code}</code>
+                              </div>
+
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
+                                  <input
+                                    type="text"
+                                    value={bulkTranslations[event.id]?.[language.code]?.title || ''}
+                                    onChange={(e) => updateBulkTranslation(event.id, language.code, 'title', e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Enter title"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                                  <textarea
+                                    value={bulkTranslations[event.id]?.[language.code]?.description || ''}
+                                    onChange={(e) => updateBulkTranslation(event.id, language.code, 'description', e.target.value)}
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                    placeholder="Enter description"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-700 mb-1">Message</label>
+                                  <textarea
+                                    value={bulkTranslations[event.id]?.[language.code]?.message || ''}
+                                    onChange={(e) => updateBulkTranslation(event.id, language.code, 'message', e.target.value)}
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                    placeholder="Enter user message"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+              <div className="text-sm text-gray-600">
+                {getEventsWithoutTranslations().length > 0 && (
+                  <>Fill in the translations above and click "Save All Translations" to add them.</>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkForm(false);
+                    setBulkTranslations({});
+                  }}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                {getEventsWithoutTranslations().length > 0 && (
+                  <button
+                    onClick={handleBulkSave}
+                    disabled={bulkSaving}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  >
+                    {bulkSaving ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Save All Translations
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

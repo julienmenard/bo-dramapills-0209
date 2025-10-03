@@ -8,6 +8,7 @@ interface GamificationEvent {
   title: string;
   description: string;
   is_active: boolean;
+  event_type_category: string | null;
 }
 
 interface EventTranslation {
@@ -19,6 +20,12 @@ interface EventTranslation {
   message: string;
   created_at: string;
   updated_at: string;
+}
+
+interface EventCategory {
+  id: string;
+  name: string;
+  category_position: number;
 }
 
 interface TranslationFormData {
@@ -37,6 +44,7 @@ interface Notification {
 
 export function EventTranslationsManager() {
   const [events, setEvents] = useState<GamificationEvent[]>([]);
+  const [eventCategories, setEventCategories] = useState<EventCategory[]>([]);
   const [translations, setTranslations] = useState<EventTranslation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -45,6 +53,7 @@ export function EventTranslationsManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState('all');
   const [languageFilter, setLanguageFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [formData, setFormData] = useState<TranslationFormData>({
@@ -93,12 +102,22 @@ export function EventTranslationsManager() {
       // Load events
       const { data: eventsData, error: eventsError } = await supabase
         .from('gamification_events')
-        .select('id, event_type, is_active')
+        .select('id, event_type, is_active, event_type_category')
         .order('event_position', { ascending: true });
 
       console.log('📊 Events loaded:', eventsData?.length || 0);
       if (eventsError) throw eventsError;
       setEvents(eventsData || []);
+
+      // Load event categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('event_categories')
+        .select('id, name, category_position')
+        .order('category_position', { ascending: true });
+
+      console.log('📋 Event categories loaded:', categoriesData?.length || 0);
+      if (categoriesError) throw categoriesError;
+      setEventCategories(categoriesData || []);
 
       // Load translations
       const { data: translationsData, error: translationsError } = await supabase
@@ -215,14 +234,48 @@ export function EventTranslationsManager() {
     return event ? event.event_type : 'Unknown Event';
   };
 
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Uncategorized';
+    const category = eventCategories.find(c => c.id === categoryId);
+    return category ? category.name : 'Unknown Category';
+  };
+
   const getLanguageName = (code: string) => {
     const language = commonLanguages.find(l => l.code === code);
     return language ? language.name : code.toUpperCase();
   };
 
+  // Group events by category
+  const groupEventsByCategory = () => {
+    const grouped: Record<string, GamificationEvent[]> = {};
+    
+    events.forEach(event => {
+      const categoryName = getCategoryName(event.event_type_category);
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = [];
+      }
+      grouped[categoryName].push(event);
+    });
+    
+    return grouped;
+  };
+
+  // Get translations for events grouped by category
+  const getTranslationsByCategory = () => {
+    const groupedEvents = groupEventsByCategory();
+    const result: Record<string, EventTranslation[]> = {};
+    
+    Object.entries(groupedEvents).forEach(([categoryName, categoryEvents]) => {
+      const eventIds = categoryEvents.map(e => e.id);
+      result[categoryName] = translations.filter(t => eventIds.includes(t.event_id));
+    });
+    
+    return result;
+  };
+
   const filteredTranslations = translations.filter((translation) => {
     const event = events.find(e => e.id === translation.event_id);
-    const eventTitle = event ? event.title : '';
+    const eventTitle = event ? event.event_type : '';
     
     const matchesSearch = 
       translation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -233,11 +286,15 @@ export function EventTranslationsManager() {
     
     const matchesEvent = eventFilter === 'all' || translation.event_id === eventFilter;
     const matchesLanguage = languageFilter === 'all' || translation.language_code === languageFilter;
+    const matchesCategory = categoryFilter === 'all' || 
+      (event && event.event_type_category === categoryFilter);
     
-    return matchesSearch && matchesEvent && matchesLanguage;
+    return matchesSearch && matchesEvent && matchesLanguage && matchesCategory;
   });
 
   const usedLanguages = [...new Set(translations.map(t => t.language_code))];
+  const translationsByCategory = getTranslationsByCategory();
+  const categoryNames = Object.keys(translationsByCategory).sort();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -320,6 +377,20 @@ export function EventTranslationsManager() {
 
           <div className="flex gap-2">
             <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Categories</option>
+              {eventCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+              <option value="">Uncategorized</option>
+            </select>
+
+            <select
               value={eventFilter}
               onChange={(e) => setEventFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -327,7 +398,7 @@ export function EventTranslationsManager() {
               <option value="all">All Events</option>
               {events.map((event) => (
                 <option key={event.id} value={event.id}>
-                  {event.title}
+                  {event.event_type}
                 </option>
               ))}
             </select>
@@ -348,7 +419,109 @@ export function EventTranslationsManager() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* Show organized by category if no filters applied, otherwise show flat list */}
+      {categoryFilter === 'all' && eventFilter === 'all' && languageFilter === 'all' && !searchTerm ? (
+        <div className="space-y-6">
+          {categoryNames.map((categoryName) => {
+            const categoryTranslations = translationsByCategory[categoryName];
+            if (categoryTranslations.length === 0) return null;
+
+            return (
+              <div key={categoryName} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      categoryName === 'User' ? 'bg-green-500' :
+                      categoryName === 'Usage' ? 'bg-blue-500' :
+                      categoryName === 'Divers' ? 'bg-purple-500' :
+                      'bg-gray-500'
+                    }`}></div>
+                    <h2 className="text-lg font-semibold text-gray-900">{categoryName}</h2>
+                    <span className="bg-white text-gray-600 px-2 py-1 rounded-full text-sm font-medium">
+                      {categoryTranslations.length} translations
+                    </span>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-4 font-medium text-gray-900">Event</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Language</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Title</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Description</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Message</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Updated</th>
+                        <th className="text-left p-4 font-medium text-gray-900">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {categoryTranslations.map((translation) => (
+                        <tr key={translation.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="p-4">
+                            <div className="font-medium text-gray-900">
+                              {getEventTitle(translation.event_id)}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-blue-600" />
+                              <span className="font-medium text-gray-900">
+                                {getLanguageName(translation.language_code)}
+                              </span>
+                              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                                {translation.language_code}
+                              </code>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <p className="font-medium text-gray-900 truncate max-w-xs">
+                              {translation.title}
+                            </p>
+                          </td>
+                          <td className="p-4">
+                            <p className="text-gray-600 truncate max-w-xs">
+                              {translation.description}
+                            </p>
+                          </td>
+                          <td className="p-4">
+                            <p className="text-gray-600 truncate max-w-xs">
+                              {translation.message}
+                            </p>
+                          </td>
+                          <td className="p-4 text-gray-600 text-sm">
+                            {formatDate(translation.updated_at)}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEdit(translation)}
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit translation"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(translation.id)}
+                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete translation"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -432,6 +605,7 @@ export function EventTranslationsManager() {
             </div>
           )}
         </div>
+      )}
       </div>
 
       {showForm && (

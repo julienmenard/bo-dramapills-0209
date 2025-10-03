@@ -10,14 +10,22 @@ interface ContentRubric {
   updated_at: string;
 }
 
+interface CampaignInfo {
+  id: string;
+  campaign_id: number;
+  country_code: string | null;
+}
+
 export function ContentRubricsManager() {
   const [rubrics, setRubrics] = useState<ContentRubric[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [campaignFilter, setCampaignFilter] = useState('all');
 
   useEffect(() => {
     loadRubrics();
+    loadCampaigns();
   }, []);
 
   const loadRubrics = async () => {
@@ -38,6 +46,27 @@ export function ContentRubricsManager() {
     }
   };
 
+  const loadCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_countries_languages')
+        .select('id, campaign_id, country_code')
+        .order('campaign_id', { ascending: true });
+
+      if (error) throw error;
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error('❌ Error loading campaigns:', error);
+    }
+  };
+
+  const getCampaignDisplay = (campaignId: string) => {
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (campaign) {
+      return `${campaign.campaign_id}${campaign.country_code ? ` - ${campaign.country_code.toUpperCase()}` : ''}`;
+    }
+    return campaignId.substring(0, 8) + '...';
+  };
   const filteredRubrics = rubrics.filter((rubric) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = (
@@ -51,7 +80,6 @@ export function ContentRubricsManager() {
     return matchesSearch && matchesCampaign;
   });
 
-  const uniqueCampaigns = [...new Set(rubrics.map(r => r.campaign_countries_languages_id))];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -103,9 +131,11 @@ export function ContentRubricsManager() {
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Campaigns</option>
-              {uniqueCampaigns.map((campaign) => (
-                <option key={campaign} value={campaign}>
-                  {campaign.substring(0, 8)}...
+              {campaigns.filter(campaign => 
+                rubrics.some(r => r.campaign_countries_languages_id === campaign.id)
+              ).map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {getCampaignDisplay(campaign.id)}
                 </option>
               ))}
             </select>

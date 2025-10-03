@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface GamificationEvent {
@@ -522,91 +522,91 @@ export function EventTranslationsManager() {
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-4 font-medium text-gray-900">Event</th>
-                <th className="text-left p-4 font-medium text-gray-900">Language</th>
-                <th className="text-left p-4 font-medium text-gray-900">Title</th>
-                <th className="text-left p-4 font-medium text-gray-900">Description</th>
-                <th className="text-left p-4 font-medium text-gray-900">Message</th>
-                <th className="text-left p-4 font-medium text-gray-900">Updated</th>
-                <th className="text-left p-4 font-medium text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredTranslations.map((translation) => (
-                <tr key={translation.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="p-4">
-                    <div className="font-medium text-gray-900">
-                      {getEventTitle(translation.event_id)}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium text-gray-900">
-                        {getLanguageName(translation.language_code)}
-                      </span>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                        {translation.language_code}
-                      </code>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <p className="font-medium text-gray-900 truncate max-w-xs">
-                      {translation.title}
-                    </p>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-gray-600 truncate max-w-xs">
-                      {translation.description}
-                    </p>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-gray-600 truncate max-w-xs">
-                      {translation.message}
-                    </p>
-                  </td>
-                  <td className="p-4 text-gray-600 text-sm">
-                    {formatDate(translation.updated_at)}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(translation)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit translation"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(translation.id)}
-                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete translation"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-4 font-medium text-gray-900">Event</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Language</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Title</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Description</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Message</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Updated</th>
+                  <th className="text-left p-4 font-medium text-gray-900">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {filteredTranslations.length === 0 && (
-            <div className="text-center py-12">
-              <Languages className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No translations found</p>
-              <p className="text-sm text-gray-500 mt-1">
-                {translations.length === 0 ? 'Create your first translation' : 'Try adjusting your filters'}
-              </p>
-            </div>
-          )}
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredTranslations.map((translation) => (
+                  <tr key={translation.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-4">
+                      <div className="font-medium text-gray-900">
+                        {getEventTitle(translation.event_id)}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium text-gray-900">
+                          {getLanguageName(translation.language_code)}
+                        </span>
+                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                          {translation.language_code}
+                        </code>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <p className="font-medium text-gray-900 truncate max-w-xs">
+                        {translation.title}
+                      </p>
+                    </td>
+                    <td className="p-4">
+                      <p className="text-gray-600 truncate max-w-xs">
+                        {translation.description}
+                      </p>
+                    </td>
+                    <td className="p-4">
+                      <p className="text-gray-600 truncate max-w-xs">
+                        {translation.message}
+                      </p>
+                    </td>
+                    <td className="p-4 text-gray-600 text-sm">
+                      {formatDate(translation.updated_at)}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEdit(translation)}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit translation"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(translation.id)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete translation"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {filteredTranslations.length === 0 && (
+              <div className="text-center py-12">
+                <Languages className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No translations found</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {translations.length === 0 ? 'Create your first translation' : 'Try adjusting your filters'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
-      </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

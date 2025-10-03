@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, CreditCard as Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Save, X, Languages, Search, Filter, Globe, CheckCircle, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface GamificationEvent {
@@ -56,6 +56,9 @@ export function EventTranslationsManager() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const [sortColumn, setSortColumn] = useState<string>('updated_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
   const [formData, setFormData] = useState<TranslationFormData>({
     event_id: '',
     language_code: '',
@@ -93,6 +96,63 @@ export function EventTranslationsManager() {
 
   const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortData = (data: EventTranslation[]) => {
+    return [...data].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'event':
+          aValue = getEventTitle(a.event_id).toLowerCase();
+          bValue = getEventTitle(b.event_id).toLowerCase();
+          break;
+        case 'language':
+          aValue = getLanguageName(a.language_code).toLowerCase();
+          bValue = getLanguageName(b.language_code).toLowerCase();
+          break;
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'description':
+          aValue = a.description.toLowerCase();
+          bValue = b.description.toLowerCase();
+          break;
+        case 'message':
+          aValue = a.message.toLowerCase();
+          bValue = b.message.toLowerCase();
+          break;
+        case 'updated_at':
+          aValue = new Date(a.updated_at).getTime();
+          bValue = new Date(b.updated_at).getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
   };
 
   const loadData = async () => {
@@ -296,6 +356,33 @@ export function EventTranslationsManager() {
   const translationsByCategory = getTranslationsByCategory();
   const categoryNames = Object.keys(translationsByCategory).sort();
 
+  const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
+    <th 
+      className="text-left p-4 font-medium text-gray-900 cursor-pointer hover:bg-gray-100 transition-colors select-none"
+      onClick={() => handleSort(column)}
+    >
+      <div className="flex items-center gap-2">
+        {children}
+        <div className="flex flex-col">
+          <ChevronUp 
+            className={`w-3 h-3 ${
+              sortColumn === column && sortDirection === 'asc' 
+                ? 'text-blue-600' 
+                : 'text-gray-300'
+            }`} 
+          />
+          <ChevronDown 
+            className={`w-3 h-3 -mt-1 ${
+              sortColumn === column && sortDirection === 'desc' 
+                ? 'text-blue-600' 
+                : 'text-gray-300'
+            }`} 
+          />
+        </div>
+      </div>
+    </th>
+  );
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -423,7 +510,7 @@ export function EventTranslationsManager() {
       {categoryFilter === 'all' && eventFilter === 'all' && languageFilter === 'all' && !searchTerm ? (
         <div className="space-y-6">
           {categoryNames.map((categoryName) => {
-            const categoryTranslations = translationsByCategory[categoryName];
+            const categoryTranslations = sortData(translationsByCategory[categoryName]);
             if (categoryTranslations.length === 0) return null;
 
             return (
@@ -447,12 +534,12 @@ export function EventTranslationsManager() {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="text-left p-4 font-medium text-gray-900">Event</th>
-                        <th className="text-left p-4 font-medium text-gray-900">Language</th>
-                        <th className="text-left p-4 font-medium text-gray-900">Title</th>
-                        <th className="text-left p-4 font-medium text-gray-900">Description</th>
-                        <th className="text-left p-4 font-medium text-gray-900">Message</th>
-                        <th className="text-left p-4 font-medium text-gray-900">Updated</th>
+                        <SortableHeader column="event">Event</SortableHeader>
+                        <SortableHeader column="language">Language</SortableHeader>
+                        <SortableHeader column="title">Title</SortableHeader>
+                        <SortableHeader column="description">Description</SortableHeader>
+                        <SortableHeader column="message">Message</SortableHeader>
+                        <SortableHeader column="updated_at">Updated</SortableHeader>
                         <th className="text-left p-4 font-medium text-gray-900">Actions</th>
                       </tr>
                     </thead>
@@ -526,17 +613,17 @@ export function EventTranslationsManager() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left p-4 font-medium text-gray-900">Event</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Language</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Title</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Description</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Message</th>
-                  <th className="text-left p-4 font-medium text-gray-900">Updated</th>
+                  <SortableHeader column="event">Event</SortableHeader>
+                  <SortableHeader column="language">Language</SortableHeader>
+                  <SortableHeader column="title">Title</SortableHeader>
+                  <SortableHeader column="description">Description</SortableHeader>
+                  <SortableHeader column="message">Message</SortableHeader>
+                  <SortableHeader column="updated_at">Updated</SortableHeader>
                   <th className="text-left p-4 font-medium text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredTranslations.map((translation) => (
+                {sortData(filteredTranslations).map((translation) => (
                   <tr key={translation.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4">
                       <div className="font-medium text-gray-900">

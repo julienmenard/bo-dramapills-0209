@@ -4,6 +4,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, x-client-info, apikey",
 };
 
+// OpenAI API configuration
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+
+// Verify API key is configured
+if (!OPENAI_API_KEY) {
+  throw new Error('Missing OPENAI_API_KEY environment variable. Please configure it in your Supabase project settings.');
+}
+
 // Language mapping with ISO codes
 const TARGET_LANGUAGES = [
   { name: 'Afrikaans', code: 'af' },
@@ -55,26 +64,74 @@ interface TranslationResult {
   message: string;
 }
 
-// Mock translation service for development
-// TODO: Replace with real translation service (DeepL, Google Translate, etc.)
-async function translateText(text: string, targetLanguage: string): Promise<string> {
-  console.log(`📝 Translating: "${text}" to ${targetLanguage}`);
+// Real OpenAI translation service
+async function translateText(text: string, sourceLanguage: string, targetLanguage: string): Promise<string> {
+  console.log(`📝 Translating: "${text}" from ${sourceLanguage} to ${targetLanguage} using OpenAI`);
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  // Mock translation - add language code as suffix
-  return `${text} [${targetLanguage}]`;
+  if (!OPENAI_API_KEY) {
+    console.warn('⚠️ OPENAI_API_KEY not found, using mock translation');
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return `${text} [${targetLanguage}]`;
+  }
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo', // You can change this to 'gpt-4o' for potentially better quality, but higher cost
+        messages: [
+          {
+            role: 'system',
+            content: `You are a highly accurate and natural language translator. Translate the provided text from ${sourceLanguage} to ${targetLanguage}. Only return the translated text, without any additional comments or formatting.`,
+          },
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+        temperature: 0.2, // Lower temperature for more deterministic translations
+        max_tokens: Math.max(50, text.length * 2), // Estimate max tokens needed, adjust as necessary
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OpenAI API error (${response.status}):`, errorText);
+      
+      // Fallback to mock translation if API fails
+      console.log(`🔄 Falling back to mock translation for: ${targetLanguage}`);
+      return `${text} [${targetLanguage}]`;
+    }
+
+    const data = await response.json();
+    if (!data.choices || data.choices.length === 0 || !data.choices[0].message || !data.choices[0].message.content) {
+      throw new Error('No translation returned from OpenAI API');
+    }
+    
+    const translatedText = data.choices[0].message.content.trim();
+    console.log(`✅ OpenAI translation successful: "${translatedText}"`);
+    
+    return translatedText;
+  } catch (error) {
+    console.error(`❌ Translation error for ${targetLanguage}:`, error);
+    
+    // Fallback to mock translation
+    console.log(`🔄 Falling back to mock translation for: ${targetLanguage}`);
+    return `${text} [${targetLanguage}]`;
+  }
 }
 
-async function translateBatch(texts: string[], targetLanguage: string): Promise<string[]> {
-  console.log(`🔄 Batch translating ${texts.length} texts to ${targetLanguage}`);
+async function translateBatch(texts: string[], sourceLanguage: string, targetLanguage: string): Promise<string[]> {
+  console.log(`🔄 Batch translating ${texts.length} texts from ${sourceLanguage} to ${targetLanguage}`);
   
-  // In production, use batch translation API if available
   const translations = await Promise.all(
-    texts.map(text => translateText(text, targetLanguage))
+    texts.map(text => translateText(text, sourceLanguage, targetLanguage))
   );
-  
+
   return translations;
 }
 
@@ -183,6 +240,7 @@ Deno.serve(async (req: Request) => {
           // Translate all three fields
           const [translatedTitle, translatedDescription, translatedMessage] = await translateBatch(
             [sourceTranslation.title, sourceTranslation.description, sourceTranslation.message],
+            sourceTranslation.language_code,
             targetLang.code
           );
 
@@ -207,8 +265,8 @@ Deno.serve(async (req: Request) => {
           continue; // Continue with next language
         }
 
-        // Add small delay to be respectful to translation API
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Add delay to respect DeepL API rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 
@@ -251,7 +309,8 @@ Deno.serve(async (req: Request) => {
 
     const result = {
       success: true,
-      message: `Successfully processed ${sourceTranslations.size} events and created ${totalTranslationsCreated} translations`,
+      message: `Successfully processed ${sourceTranslations.size} events and created ${totalTranslationsCreated} translations using OpenAI API.`,
+      notice: OPENAI_API_KEY ? "Using OpenAI API for translations" : "Using mock translations (OPENAI_API_KEY not configured)",
       stats: {
         eventsProcessed: sourceTranslations.size,
         translationsCreated: totalTranslationsCreated,

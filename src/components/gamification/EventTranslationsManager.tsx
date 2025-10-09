@@ -59,8 +59,6 @@ export function EventTranslationsManager() {
   const [sortColumn, setSortColumn] = useState<string>('updated_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-
   const [formData, setFormData] = useState<TranslationFormData>({
     event_id: '',
     language_code: '',
@@ -84,10 +82,6 @@ export function EventTranslationsManager() {
 
   useEffect(() => {
     loadData();
-    // Set language filter to French by default
-    setLanguageFilter('fr');
-    // Set default language for new translations to French
-    setFormData(prev => ({ ...prev, language_code: 'fr' }));
   }, []);
 
   const addNotification = (type: 'success' | 'error', message: string) => {
@@ -271,43 +265,6 @@ export function EventTranslationsManager() {
     }
   };
 
-  const handleBulkDeleteEnglish = async () => {
-    const englishTranslations = translations.filter(t => t.language_code === 'en');
-    
-    if (englishTranslations.length === 0) {
-      addNotification('error', 'No English translations found to delete.');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to delete all ${englishTranslations.length} English translations? This action cannot be undone.`)) {
-      return;
-    }
-
-    console.log('🗑️ Bulk deleting English translations:', englishTranslations.length);
-    setBulkDeleting(true);
-
-    try {
-      const { error } = await supabase
-        .from('gamification_event_translations')
-        .delete()
-        .eq('language_code', 'en');
-
-      if (error) throw error;
-      
-      console.log('✅ English translations deleted successfully');
-      addNotification('success', `Successfully deleted ${englishTranslations.length} English translations`);
-      console.log('🔄 Reloading data after bulk delete...');
-      await loadData();
-      console.log('✅ Data reloaded successfully');
-    } catch (error) {
-      console.error('❌ Error bulk deleting English translations:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      addNotification('error', `Failed to delete English translations: ${errorMessage}`);
-    } finally {
-      setBulkDeleting(false);
-    }
-  };
-
   const handleEdit = (translation: EventTranslation) => {
     setFormData({
       event_id: translation.event_id,
@@ -377,11 +334,6 @@ export function EventTranslationsManager() {
   };
 
   const filteredTranslations = translations.filter((translation) => {
-    // Only show French translations
-    if (translation.language_code !== 'fr') {
-      return false;
-    }
-    
     const event = events.find(e => e.id === translation.event_id);
     const eventTitle = event ? event.event_type : '';
     
@@ -401,10 +353,8 @@ export function EventTranslationsManager() {
   });
 
   const usedLanguages = [...new Set(translations.map(t => t.language_code))];
-  const frenchTranslations = translations.filter(t => t.language_code === 'fr');
   const translationsByCategory = getTranslationsByCategory();
   const categoryNames = Object.keys(translationsByCategory).sort();
-  const frenchTranslationsCount = frenchTranslations.length;
 
   const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
     <th 
@@ -488,23 +438,16 @@ export function EventTranslationsManager() {
             <Languages className="w-8 h-8 text-blue-600" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Event Translations</h1>
-              <p className="text-gray-600">Manage French content for gamification events</p>
-              {frenchTranslationsCount > 0 && (
-                <p className="text-sm text-blue-600 mt-1">
-                  {frenchTranslationsCount} French translation{frenchTranslationsCount !== 1 ? 's' : ''} found
-                </p>
-              )}
+              <p className="text-gray-600">Manage multilingual content for gamification events</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Translation
-            </button>
-          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Translation
+          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4">
@@ -550,11 +493,10 @@ export function EventTranslationsManager() {
             <select
               value={languageFilter}
               onChange={(e) => setLanguageFilter(e.target.value)}
-              disabled
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="fr">French Only</option>
-              {usedLanguages.filter(lang => lang === 'fr').map((lang) => (
+              <option value="all">All Languages</option>
+              {usedLanguages.map((lang) => (
                 <option key={lang} value={lang}>
                   {getLanguageName(lang)}
                 </option>
@@ -801,11 +743,11 @@ export function EventTranslationsManager() {
                       value={formData.language_code}
                       onChange={(e) => setFormData({ ...formData, language_code: e.target.value })}
                       required
-                      disabled
+                      disabled={!!editingTranslation}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                     >
-                      <option value="fr">Français (fr)</option>
-                      {commonLanguages.filter(lang => lang.code === 'fr').map((lang) => (
+                      <option value="">Select language...</option>
+                      {commonLanguages.map((lang) => (
                         <option key={lang.code} value={lang.code}>
                           {lang.name} ({lang.code})
                         </option>

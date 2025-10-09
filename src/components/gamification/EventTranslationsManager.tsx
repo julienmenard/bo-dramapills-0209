@@ -701,4 +701,4 @@ export function EventTranslationsManager() {
             {englishTranslationsCount > 0 && (
               <button
                 onClick={handleBulkDeleteEnglish}
-                disable
+                disabled={bulkDeleting}

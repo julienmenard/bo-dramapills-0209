@@ -1138,7 +1138,7 @@ export function EventTranslationsManager() {
                   className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
                 >
                   Cancel
-                </p>
+                </button>
                 <button
                   type="submit"
                   disabled={saving}

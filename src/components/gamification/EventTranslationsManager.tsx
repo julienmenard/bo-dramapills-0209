@@ -59,6 +59,8 @@ export function EventTranslationsManager() {
   const [sortColumn, setSortColumn] = useState<string>('updated_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   const [formData, setFormData] = useState<TranslationFormData>({
     event_id: '',
     language_code: '',
@@ -265,6 +267,43 @@ export function EventTranslationsManager() {
     }
   };
 
+  const handleBulkDeleteEnglish = async () => {
+    const englishTranslations = translations.filter(t => t.language_code === 'en');
+    
+    if (englishTranslations.length === 0) {
+      addNotification('error', 'No English translations found to delete.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete all ${englishTranslations.length} English translations? This action cannot be undone.`)) {
+      return;
+    }
+
+    console.log('🗑️ Bulk deleting English translations:', englishTranslations.length);
+    setBulkDeleting(true);
+
+    try {
+      const { error } = await supabase
+        .from('gamification_event_translations')
+        .delete()
+        .eq('language_code', 'en');
+
+      if (error) throw error;
+      
+      console.log('✅ English translations deleted successfully');
+      addNotification('success', `Successfully deleted ${englishTranslations.length} English translations`);
+      console.log('🔄 Reloading data after bulk delete...');
+      await loadData();
+      console.log('✅ Data reloaded successfully');
+    } catch (error) {
+      console.error('❌ Error bulk deleting English translations:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      addNotification('error', `Failed to delete English translations: ${errorMessage}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const handleEdit = (translation: EventTranslation) => {
     setFormData({
       event_id: translation.event_id,
@@ -355,6 +394,7 @@ export function EventTranslationsManager() {
   const usedLanguages = [...new Set(translations.map(t => t.language_code))];
   const translationsByCategory = getTranslationsByCategory();
   const categoryNames = Object.keys(translationsByCategory).sort();
+  const englishTranslationsCount = translations.filter(t => t.language_code === 'en').length;
 
   const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
     <th 
@@ -439,15 +479,36 @@ export function EventTranslationsManager() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Event Translations</h1>
               <p className="text-gray-600">Manage multilingual content for gamification events</p>
+              {englishTranslationsCount > 0 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  {englishTranslationsCount} English translation{englishTranslationsCount !== 1 ? 's' : ''} found
+                </p>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Translation
-          </button>
+          <div className="flex items-center gap-3">
+            {englishTranslationsCount > 0 && (
+              <button
+                onClick={handleBulkDeleteEnglish}
+                disabled={bulkDeleting}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                {bulkDeleting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Delete All English ({englishTranslationsCount})
+              </button>
+            )}
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Translation
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4">

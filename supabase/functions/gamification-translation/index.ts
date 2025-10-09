@@ -45,6 +45,10 @@ const TARGET_LANGUAGES = [
   { name: 'Thai', code: 'th' },
   { name: 'Urdu', code: 'ur' },
   { name: 'Vietnamese', code: 'vi' },
+  // Test languages - remove after testing
+  { name: 'Norwegian', code: 'no' },
+  { name: 'Swedish', code: 'sv' },
+  { name: 'Danish', code: 'da' },
 ];
 
 interface ExistingTranslation {
@@ -150,6 +154,11 @@ Deno.serve(async (req: Request) => {
     console.log('📋 Request method:', req.method);
     console.log('📋 Request URL:', req.url);
     
+    // Check for force regeneration parameter
+    const url = new URL(req.url);
+    const forceRegeneration = url.searchParams.get('force') === 'true';
+    console.log('🔄 Force regeneration:', forceRegeneration);
+    
     // Environment check
     console.log('🌍 Environment check:');
     console.log('  - SUPABASE_URL exists:', !!Deno.env.get('SUPABASE_URL'));
@@ -221,7 +230,7 @@ Deno.serve(async (req: Request) => {
 
       // Determine which languages need translation
       const languagesToTranslate = TARGET_LANGUAGES.filter(lang => 
-        !existingLanguages.has(lang.code)
+        forceRegeneration || !existingLanguages.has(lang.code)
       );
       
       console.log(`🎯 Languages to translate: [${languagesToTranslate.map(l => l.code).join(', ')}]`);

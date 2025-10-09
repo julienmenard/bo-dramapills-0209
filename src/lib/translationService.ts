@@ -1,5 +1,5 @@
 // Translation service for automatic translation of gamification events
-// This is a mock implementation - in production you would use a real translation API
+// This is a mock implementation - in production you would use DeepL API
 
 export interface TranslationRequest {
   text: string;
@@ -73,7 +73,7 @@ const MOCK_TRANSLATIONS: Record<string, Record<string, string>> = {
   }
 };
 
-// Mock translation service - in production, replace with real API
+// Mock translation service - in production, replace with DeepL API
 export class TranslationService {
   private static instance: TranslationService;
 
@@ -84,7 +84,7 @@ export class TranslationService {
     return TranslationService.instance;
   }
 
-  // Mock translation - in production use Google Translate, DeepL, or Azure Translator
+  // Mock translation - in production use DeepL API
   async translateText(request: TranslationRequest): Promise<TranslationResult> {
     console.log(`🔄 Translating "${request.text}" to ${request.targetLanguage}`);
     
@@ -97,7 +97,7 @@ export class TranslationService {
       return {
         translatedText: mockTranslation,
         confidence: 0.95,
-        service: 'mock-translator'
+        service: 'deepl-mock'
       };
     }
 
@@ -107,7 +107,7 @@ export class TranslationService {
     return {
       translatedText,
       confidence: 0.85,
-      service: 'mock-translator'
+      service: 'deepl-mock'
     };
   }
 
@@ -140,7 +140,7 @@ export class TranslationService {
     }
     
     // For sentences, add language prefix
-    return `[${languageName}] ${text}`;
+    return `[DeepL-${languageName}] ${text}`;
   }
 
   // Get language name by code
@@ -155,9 +155,9 @@ export class TranslationService {
   }
 }
 
-// In production, you would implement real API calls like:
+// In production, you would implement DeepL API calls like:
 /*
-export class GoogleTranslateService {
+export class DeepLTranslateService {
   private apiKey: string;
 
   constructor(apiKey: string) {
@@ -165,25 +165,24 @@ export class GoogleTranslateService {
   }
 
   async translateText(request: TranslationRequest): Promise<TranslationResult> {
-    const response = await fetch('https://translation.googleapis.com/language/translate/v2', {
+    const response = await fetch('https://api-free.deepl.com/v2/translate', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization': `DeepL-Auth-Key ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        q: request.text,
-        target: request.targetLanguage,
-        source: request.sourceLanguage || 'en',
-        format: 'text'
+        text: [request.text],
+        target_lang: request.targetLanguage.toUpperCase(),
+        source_lang: request.sourceLanguage?.toUpperCase() || 'EN',
       })
     });
 
     const data = await response.json();
     return {
-      translatedText: data.data.translations[0].translatedText,
-      confidence: data.data.translations[0].confidence,
-      service: 'google-translate'
+      translatedText: data.translations[0].text,
+      confidence: 0.95, // DeepL doesn't provide confidence scores
+      service: 'deepl'
     };
   }
 }
